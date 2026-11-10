@@ -1,0 +1,26 @@
+# Python environments and installed dependencies
+.venv/
+venv/
+ENV/
+.packages/
+site-packages/
+# Generated caches and editor settings
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.idea/
+.pytest_cache/
+# Local credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa
+id_ed25519
+# Downloaded installers
+software-downloads/
+# OS files
+Thumbs.db
+.DS_Store

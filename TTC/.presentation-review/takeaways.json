@@ -1,0 +1,35 @@
+{
+  "search_overall": [
+    "Beam search is strongest at low budgets, but its advantage shrinks as compute increases.",
+    "At matched cost, extra lookahead usually gives less benefit."
+  ],
+  "search_difficulty": [
+    "Extra search can hurt easy questions, help medium difficulty questions, and still fail on the hardest ones.",
+    "Both question difficulty and compute budget should guide the search setting."
+  ],
+  "search_adaptive": [
+    "Difficulty-based allocation improves search efficiency.",
+    "At low budgets, 16 generations nearly match best-of-N with 64.",
+    "Predicted difficulty loses some of its advantage at higher budgets."
+  ],
+  "revision_quality": [
+    "Revision improves single-answer accuracy, then the gains level off.",
+    "Sequential sampling slightly beats independent sampling with either selection rule."
+  ],
+  "revision_mix": [
+    "At high budgets, a mixture can beat either pure parallel or pure sequential generation.",
+    "Easy questions favor long chains; harder questions often benefit from more independent starts.",
+    "The best mix depends on both difficulty and budget."
+  ],
+  "revision_adaptive": [
+    "Adaptive revisions keep improving after parallel sampling begins to plateau.",
+    "64 candidates can beat parallel best-of-N with 256 candidates."
+  ],
+  "model_comparison": [
+    "Extra inference often wins on easy or medium questions, especially when expected inference use is low.",
+    "A larger model is often better on very hard questions or when expected inference use is high."
+  ],
+  "r_example": [
+    "The better choice depends on both question difficulty and expected use."
+  ]
+}

@@ -1,0 +1,1752 @@
+% Strict Moodle Heidelberg Beamer version
+% Based on the Moodle file beamer-template_en.tex
+% Presenter: Junfeng Wei
+% Papers:
+% 1. Hammond, Vandergheynst, Gribonval, Wavelets on Graphs via Spectral Graph Theory
+% 2. Kipf and Welling, Semi-Supervised Classification with Graph Convolutional Networks
+
+\documentclass[aspectratio=1610,xcolor=dvipsnames,t]{beamer}
+\usepackage{lmodern}
+\usepackage{sansmath}
+\usepackage{mathastext}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{fancybox}
+
+\usepackage{beamerthemesplit}
+\usetheme[compress]{Heidelberg}
+\definecolor{unirot}{rgb}{0.5976525,0,0}
+\usecolortheme[named=unirot]{structure}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{ragged2e}
+
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcommand{\keyterm}[1]{\textcolor{unirot}{\textbf{#1}}}
+\newcommand{\source}[1]{\vspace{0.04cm}{\scriptsize\color{gray} Source: #1}}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\V}{\mathcal{V}}
+\newcommand{\F}{\mathcal{F}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\softmax}{\operatorname{softmax}}
+\newcommand{\ReLU}{\operatorname{ReLU}}
+\newcommand{\dist}{\operatorname{dist}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\sgwt}{\mathrm{SGWT}}
+\newcommand{\gcn}{\mathrm{GCN}}
+\newcommand{\what}[1]{\widehat{#1}}
+\newcommand{\wt}[1]{\widetilde{#1}}
+\newcommand{\inner}[2]{\langle #1,#2\rangle}
+\newcommand{\norm}[1]{\left\lVert #1\right\rVert}
+\newcommand{\Tbar}{\overline{T}}
+\newcommand{\Atil}{\widetilde{A}}
+\newcommand{\Dtil}{\widetilde{D}}
+\newcommand{\Ahat}{\widehat{A}}
+\newcommand{\Ltil}{\widetilde{L}}
+
+\newcommand{\figureplaceholder}[2]{
+\begin{center}
+\fbox{
+\begin{minipage}[c][#2][c]{0.86\textwidth}
+\centering
+#1
+\end{minipage}}
+\end{center}
+}
+
+\title[From Convolution to GCN]{From Convolution to Graph Convolutional Networks}
+\subtitle{Spectral Graph Wavelets, Chebyshev Approximation, and GCNs}
+\author[Junfeng Wei, Yizhou Huang]{Junfeng Wei, Yizhou Huang}
+\date{\today}
+\institute[Uni HD]{
+Heidelberg University\\
+Institute of Computer Science}
+
+\AtBeginSection[]
+{
+\begin{frame}<beamer>
+\frametitle{Outline}
+\tableofcontents[currentsection,hideallsubsections]
+\end{frame}
+}
+
+\begin{document}
+
+%------------------------------------------------------------
+\frame[plain]{\titlepage}
+
+%------------------------------------------------------------
+\begin{frame}{Outline}
+\begin{enumerate}
+  \item Convolution: why translation becomes a problem on graphs
+  \item Fourier transform and the convolution theorem
+  \item DFT, graph Laplacian, and graph Fourier basis
+  \item Spectral Graph Wavelet Transform
+  \item Chebyshev wavelet approximation
+  \item Graph Convolutional Networks
+\end{enumerate}
+
+\medskip
+\begin{block}{Core question}
+How can convolution-like filtering be defined on irregular graphs without translation?
+\end{block}
+\end{frame}
+
+\begin{frame}{Logical Roadmap}
+
+\vspace{-0.05cm}
+
+\centering
+\resizebox{0.94\textwidth}{!}{%
+\begin{tikzpicture}[
+    >=Latex,
+    mainbox/.style={
+        rounded corners=3pt,
+        draw=black!45,
+        line width=0.7pt,
+        fill=gray!6,
+        text width=3.10cm,
+        minimum height=1.00cm,
+        align=center,
+        font=\small
+    },
+    corebox/.style={
+        rounded corners=5pt,
+        draw=unirot,
+        line width=1.15pt,
+        fill=unirot!5,
+        text width=5.05cm,
+        minimum height=1.18cm,
+        align=center,
+        font=\small
+    },
+    keybox/.style={
+        rounded corners=4pt,
+        draw=unirot,
+        line width=1.1pt,
+        fill=unirot!4,
+        text width=3.25cm,
+        minimum height=0.95cm,
+        align=center,
+        font=\small
+    },
+    smallbox/.style={
+        rounded corners=3pt,
+        draw=black!45,
+        line width=0.7pt,
+        fill=gray!6,
+        text width=2.95cm,
+        minimum height=0.92cm,
+        align=center,
+        font=\small
+    },
+    arr/.style={
+        ->,
+        line width=0.9pt,
+        draw=black!65,
+        shorten >=2pt,
+        shorten <=2pt
+    },
+    redarr/.style={
+        ->,
+        line width=0.95pt,
+        draw=unirot,
+        shorten >=2pt,
+        shorten <=2pt
+    }
+]
+
+% ============================================================
+% Top row: classical convolution to graph Fourier basis
+% ============================================================
+
+\node[mainbox] (conv) at (0,0)
+{Euclidean\\Convolution};
+
+\node[mainbox] (fourier) at (3.90,0)
+{Fourier\\Multiplication};
+
+\node[mainbox] (dft) at (7.80,0)
+{DFT \& Grid\\Laplacian\\Eigenbasis};
+
+\node[mainbox] (gfb) at (11.70,0)
+{Graph Fourier\\Basis};
+
+\draw[arr] (conv.east) -- (fourier.west);
+\draw[arr] (fourier.east) -- (dft.west);
+\draw[arr] (dft.east) -- (gfb.west);
+
+% ============================================================
+% Core node: graph spectral filtering
+% Placed above the midpoint of SGWT and Chebyshev
+% ============================================================
+
+\node[corebox] (filter) at (4.80,-2.00)
+{
+{\color{unirot}\textbf{Graph Spectral Filtering}}\\[1mm]
+$\displaystyle g(L)=U g(\Lambda)U^\top$
+};
+
+% Graph Fourier Basis -> Graph Spectral Filtering
+\draw[arr]
+(gfb.south) to[out=-90,in=10]
+($(filter.east)+(0,0.08)$);
+
+% ============================================================
+% Bottom branch: SGWT and GCN route
+% ============================================================
+
+\node[keybox] (sgwt) at (2.80,-4.35)
+{
+{\color{unirot}\textbf{SGWT}}\\[-0.5mm]
+$\displaystyle g(tL)$
+};
+
+\node[smallbox] (cheb) at (6.80,-4.35)
+{Chebyshev\\Approximation};
+
+\node[keybox] (gcn) at (10.55,-4.35)
+{
+{\color{unirot}\textbf{GCN}}\\[-0.5mm]
+Layer
+};
+
+% ---------- symmetric clean split from Graph Spectral Filtering ----------
+\coordinate (stem) at ($(filter.south)+(0,-0.42)$);
+
+\coordinate (leftcorner)  at ($(stem)+(-2.00,0)$);
+\coordinate (rightcorner) at ($(stem)+(2.00,0)$);
+
+\coordinate (sgwttop) at ($(sgwt.north)+(0,0.18)$);
+\coordinate (chebtop) at ($(cheb.north)+(0,0.18)$);
+
+% vertical stem
+\draw[
+    line width=0.95pt,
+    draw=unirot
+]
+(filter.south) -- (stem);
+
+% left branch
+\draw[
+    line width=0.95pt,
+    draw=unirot,
+    rounded corners=8pt
+]
+(stem) -- (leftcorner) -- (sgwttop);
+
+\draw[
+    ->,
+    line width=0.95pt,
+    draw=unirot,
+    shorten >=2pt
+]
+(sgwttop) -- (sgwt.north);
+
+% right branch
+\draw[
+    line width=0.95pt,
+    draw=unirot,
+    rounded corners=8pt
+]
+(stem) -- (rightcorner) -- (chebtop);
+
+\draw[
+    ->,
+    line width=0.95pt,
+    draw=unirot,
+    shorten >=2pt
+]
+(chebtop) -- (cheb.north);
+
+% Chebyshev approximation -> GCN
+\draw[arr] (cheb.east) -- (gcn.west);
+
+% ============================================================
+% Captions below key nodes
+% ============================================================
+
+\node[text=unirot, font=\scriptsize] at (2.80,-5.00)
+{$\cdots\cdots\cdots$};
+
+\node[
+    align=center,
+    font=\scriptsize\bfseries,
+    text=unirot
+] at (2.80,-5.38)
+{multi-scale analysis\\and reconstruction};
+
+\node[text=unirot, font=\scriptsize] at (10.55,-5.00)
+{$\cdots\cdots\cdots$};
+
+\node[
+    align=center,
+    font=\scriptsize\bfseries,
+    text=unirot
+] at (10.55,-5.38)
+{trainable local\\propagation rule};
+
+\end{tikzpicture}
+}
+
+\vspace{0.35cm}
+
+\begin{center}
+\small
+{\Large\textbf{\color{unirot}SGWT}} keeps the multi-scale wavelet viewpoint,\\[1mm]
+while {\Large\textbf{\color{unirot}GCN}} simplifies spectral filtering into a trainable propagation layer.
+\end{center}
+
+\end{frame}
+
+%============================================================
+\section[Convolution]{Convolution}
+%============================================================
+
+%------------------------------------------------------------
+\begin{frame}{Euclidean Convolution}
+For a continuous one-dimensional signal,
+\[
+(f*h)(a)=\int_{\R} h(a-x)f(x)\,dx.
+\]
+
+\begin{itemize}
+  \item $f$: input signal.
+  \item $h$: filter or kernel.
+  \item $a$: output location.
+  \item $h(a-x)$: the filter $h$ translated to the output location $a$.
+\end{itemize}
+
+\begin{block}{Key point}
+Convolution is based on translating one shared filter across a regular domain.
+\end{block}
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Classical Wavelets}
+Classical wavelets are generated from one mother wavelet $\psi$ by translation and scaling:
+\[
+\psi_{s,a}(x)
+=
+\frac{1}{s}\psi\left(\frac{x-a}{s}\right).
+\tag{SGWT Eq. 1}
+\]
+
+For a signal $f$, the wavelet coefficient at scale $s$ and location $a$ is
+\[
+W_f(s,a)
+=
+\int_{-\infty}^{\infty}
+\frac{1}{s}
+\psi^*\left(\frac{x-a}{s}\right)
+f(x)\,dx.
+\tag{SGWT Eq. 2}
+\]
+
+For a fixed scale $s$, we view the transform as an operator:
+\[
+(T^s f)(a)=W_f(s,a).
+\]
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Fixed-Scale CWT as Convolution}
+Define
+\[
+\overline{\psi}_s(x)
+=
+\frac{1}{s}
+\psi^*\left(\frac{-x}{s}\right).
+\tag{SGWT Eq. 5}
+\]
+
+Then, for a fixed scale $s$,
+\[
+\begin{aligned}
+(T^s f)(a)
+&=
+\int_{-\infty}^{\infty}
+\frac{1}{s}
+\psi^*\left(\frac{x-a}{s}\right)
+f(x)\,dx \\
+&=
+\int_{-\infty}^{\infty}
+\overline{\psi}_s(a-x)f(x)\,dx \\
+&=
+(\overline{\psi}_s*f)(a).
+\end{aligned}
+\tag{SGWT Eq. 6}
+\]
+
+\begin{block}{Meaning}
+At each fixed scale, the classical wavelet transform is a convolution with a scaled wavelet filter.
+\end{block}
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}[t]{From Convolution to Spectral Filtering}
+
+\footnotesize
+\setlength{\abovedisplayskip}{3pt}
+\setlength{\belowdisplayskip}{3pt}
+\setlength{\abovedisplayshortskip}{2pt}
+\setlength{\belowdisplayshortskip}{2pt}
+
+\begin{alertblock}{Graph difficulty}
+Direct translation and scaling are not naturally defined on general graphs.
+There is no natural meaning for $a-x$ or $sx$ when $x$ is a graph vertex.
+\end{alertblock}
+
+\vspace{-0.4em}
+
+\begin{block}{Key idea}
+Move to the Fourier domain, where convolution becomes multiplication.
+\end{block}
+
+\vspace{-0.5em}
+
+\[
+\widehat{T^s f}(\omega)
+=
+\widehat{\overline{\psi}_s*f}(\omega)
+=
+\widehat{\overline{\psi}}_s(\omega)\widehat{f}(\omega).
+\tag{\footnotesize SGWT Eq. 7}
+\]
+
+\vspace{-0.3em}
+
+Using the scaling property of the Fourier transform,
+
+\vspace{-0.4em}
+
+\[
+\widehat{\overline{\psi}}_s(\omega)
+=
+\widehat{\psi}^{\,*}(s\omega).
+\tag{\footnotesize SGWT Eq. 8}
+\]
+
+\vspace{-0.4em}
+
+Thus,
+
+\vspace{-0.4em}
+
+\[
+(T^s f)(a)
+=
+\frac{1}{2\pi}
+\int_{-\infty}^{\infty}
+e^{i\omega a}
+\widehat{\psi}^{\,*}(s\omega)
+\widehat{f}(\omega)\,d\omega.
+\tag{\footnotesize SGWT Eq. 9}
+\]
+
+\vspace{-0.2em}
+
+\begin{center}
+\keyterm{translation-based convolution}
+\quad$\longrightarrow$\quad
+\keyterm{spectral filtering}
+\end{center}
+
+\end{frame}
+
+%============================================================
+\section[Fourier]{Fourier Transform and Convolution Theorem}
+%============================================================
+
+\begin{frame}{Fourier Transform}
+The Fourier transform and inverse transform are
+\[
+\widehat f(\omega)
+=
+\int_{\R}
+f(a)e^{-i\omega a}\,da,
+\]
+\[
+f(a)
+=
+\frac{1}{2\pi}
+\int_{\R}
+\widehat f(\omega)e^{i\omega a}\,d\omega.
+\]
+
+\begin{block}{Notation}
+Here $a$ denotes the spatial position, and $\omega$ denotes the Fourier frequency.
+\end{block}
+
+\begin{block}{Interpretation}
+Fourier transform represents a signal by frequency components rather than by spatial positions.
+\end{block}
+\end{frame}
+
+
+\begin{frame}{Convolution Theorem}
+For
+\[
+(f*h)(a)
+=
+\int_{\R}
+f(x)h(a-x)\,dx,
+\]
+the convolution theorem gives
+\[
+\widehat{f*h}(\omega)
+=
+\widehat f(\omega)\widehat h(\omega).
+\]
+
+\begin{block}{Consequence}
+A convolution operator in the $a$-domain can be represented as pointwise multiplication in the Fourier domain.
+\end{block}
+
+\[
+\text{convolution in } a\text{-domain}
+\quad\Longleftrightarrow\quad
+\text{multiplication in } \omega\text{-domain}
+\]
+\end{frame}
+
+
+\begin{frame}{Proof Idea of the Convolution Theorem}
+\[
+\widehat{f*h}(\omega)
+=
+\int_{\R}
+\left(
+\int_{\R}
+f(x)h(a-x)\,dx
+\right)
+e^{-i\omega a}\,da.
+\]
+
+Let
+\[
+u=a-x,
+\qquad
+a=u+x.
+\]
+
+Then
+\[
+e^{-i\omega a}
+=
+e^{-i\omega(u+x)}
+=
+e^{-i\omega u}e^{-i\omega x}.
+\]
+
+Therefore,
+\[
+\widehat{f*h}(\omega)
+=
+\left(
+\int_{\R}
+f(x)e^{-i\omega x}\,dx
+\right)
+\left(
+\int_{\R}
+h(u)e^{-i\omega u}\,du
+\right),
+\]
+\[
+\widehat{f*h}(\omega)
+=
+\widehat f(\omega)\widehat h(\omega).
+\]
+\end{frame}
+
+
+\begin{frame}{Fourier Multiplier Form of Wavelets}
+From the convolution form of fixed-scale CWT,
+\[
+(T^s f)(a)
+=
+(\overline{\psi}_s*f)(a).
+\]
+
+Taking the Fourier transform gives
+\[
+\widehat{T^s f}(\omega)
+=
+\widehat{\overline{\psi}_s}(\omega)\widehat f(\omega).
+\tag{SGWT Eq. 7}
+\]
+
+Using the scaling property,
+\[
+\widehat{\overline{\psi}_s}(\omega)
+=
+\widehat\psi^{\,*}(s\omega).
+\tag{SGWT Eq. 8}
+\]
+
+Therefore,
+\[
+(T^s f)(a)
+=
+\frac{1}{2\pi}
+\int_{-\infty}^{\infty}
+e^{i\omega a}
+\widehat\psi^{\,*}(s\omega)
+\widehat f(\omega)\,d\omega.
+\tag{SGWT Eq. 9}
+\]
+\end{frame}
+
+
+\begin{frame}{Why This Matters for Graphs}
+\begin{block}{Classical wavelets}
+Scaling can be expressed in the Fourier domain as
+\[
+\widehat\psi^{\,*}(s\omega).
+\]
+\end{block}
+
+\begin{block}{Graph wavelets}
+Replace Fourier frequencies $\omega$ by graph Laplacian eigenvalues $\lambda_\ell$:
+\[
+\omega
+\quad\longrightarrow\quad
+\lambda_\ell.
+\]
+\end{block}
+
+\[
+\widehat\psi^{\,*}(s\omega)
+\quad\leadsto\quad
+g(t\lambda_\ell).
+\]
+
+\begin{center}
+\keyterm{This is the conceptual bridge from CWT to SGWT.}
+\end{center}
+\end{frame}
+
+%============================================================
+\section[DFT and Graph Fourier]{DFT, Graph Laplacian, and Graph Fourier Basis}
+%============================================================
+
+%------------------------------------------------------------
+\begin{frame}[t]{DFT on Finite Regular Grids}
+
+\setlength{\abovedisplayskip}{3pt}
+\setlength{\belowdisplayskip}{3pt}
+\setlength{\abovedisplayshortskip}{2pt}
+\setlength{\belowdisplayshortskip}{2pt}
+
+For a finite discrete signal $x[n]$, the DFT is
+\[
+X[k]
+=
+\sum_{n=0}^{N-1}
+x[n]e^{-2\pi i kn/N}.
+\]
+
+\vspace{-0.5em}
+
+The inverse DFT is
+\[
+x[n]
+=
+\frac{1}{N}
+\sum_{k=0}^{N-1}
+X[k]e^{2\pi i kn/N}.
+\]
+
+\vspace{-0.5em}
+
+The DFT basis functions are
+\[
+\chi_k[n]
+=
+e^{2\pi i kn/N}.
+\]
+
+\vspace{-0.4em}
+
+\begin{block}{Key point}
+DFT gives a Fourier basis for finite regular grids:
+\[
+f(a)\leftrightarrow x[n],
+\quad
+\widehat f(\omega)\leftrightarrow X[k],
+\quad
+e^{i\omega a}\leftrightarrow e^{2\pi i kn/N}.
+\]
+This will serve as the reference case when we replace regular-grid Fourier modes by graph Laplacian eigenvectors.
+\end{block}
+
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{DFT Convolution Theorem}
+
+For convolution,
+\[
+(x*h)[n]
+=
+\sum_{m=0}^{N-1}
+x[m]h[(n-m)\bmod N],
+\]
+\[
+(f*h)(a)
+\leftrightarrow
+(x*h)[n].
+\]
+
+we have
+\[
+\mathrm{DFT}(x*h)[k]
+=
+X[k]H[k],
+\]
+\[
+\widehat{f*h}(\omega)
+=
+\widehat f(\omega)\widehat h(\omega)
+\quad\leftrightarrow\quad
+\mathrm{DFT}(x*h)[k]
+=
+X[k]H[k].
+\]
+
+\begin{block}{Key point}
+The DFT keeps the same convolution principle as the continuous Fourier transform: convolution in the original domain becomes multiplication in the frequency domain.
+\end{block}
+
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Graph Laplacian and Spectrum}
+For a weighted undirected graph,
+\[
+L=D-A.
+\]
+
+Since $L$ is real symmetric, it has an orthonormal eigenbasis:
+\[
+L\chi_\ell
+=
+\lambda_\ell\chi_\ell,
+\]
+\[
+0=\lambda_0
+\leq
+\lambda_1
+\leq
+\cdots
+\leq
+\lambda_{N-1}.
+\]
+
+For the unnormalized Laplacian,
+\[
+f^TLf
+=
+\frac{1}{2}
+\sum_{i,j}
+A_{ij}(f_i-f_j)^2.
+\]
+
+\begin{center}
+\keyterm{Small eigenvalues correspond to smooth graph signals.}
+\end{center}
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{Graph Fourier Transform}
+The graph Fourier transform is
+\[
+\widehat f(\ell)
+=
+\langle \chi_\ell,f\rangle
+=
+\sum_{n=0}^{N-1}
+\chi_\ell^*(n)f(n).
+\tag{SGWT Eq. 18}
+\]
+
+The inverse graph Fourier transform is
+\[
+f(n)
+=
+\sum_{\ell=0}^{N-1}
+\widehat f(\ell)\chi_\ell(n).
+\tag{SGWT Eq. 19}
+\]
+
+The Parseval relation is
+\[
+\langle f,h\rangle
+=
+\langle \widehat f,\widehat h\rangle.
+\tag{SGWT Eq. 20}
+\]
+
+\keyterm{The inner product of two graph signals is the same in the vertex domain and in the graph Fourier domain.}
+\end{frame}
+
+%------------------------------------------------------------
+\begin{frame}{From Graph Fourier to Graph Filtering}
+\begin{block}{Fourier multiplier}
+\[
+\widehat{Tf}(\omega)
+=
+m(\omega)\widehat f(\omega).
+\]
+\end{block}
+
+\begin{block}{Graph spectral multiplier}
+\[
+\widehat{T_g f}(\ell)
+=
+g(\lambda_\ell)\widehat f(\ell).
+\]
+\end{block}
+
+\begin{center}
+\keyterm{This gives a way to define graph filters without graph translation.}
+\end{center}
+\end{frame}
+
+%============================================================
+\section[SGWT]{Spectral Graph Wavelet Transform}
+%============================================================
+\begin{frame}{Spectral Graph Filter}
+
+For a spectral filter function $g$, define the graph spectral operator by
+\[
+\widehat{T_g f}(\ell)
+=
+g(\lambda_\ell)\widehat f(\ell).
+\tag{SGWT Eq.~21}
+\]
+
+In the vertex domain, this becomes
+\[
+(T_g f)(m)
+=
+\sum_{\ell=0}^{N-1}
+g(\lambda_\ell)\widehat f(\ell)\chi_\ell(m).
+\tag{SGWT Eq.~22}
+\]
+
+Equivalently, if $L=U\Lambda U^*$, then
+\[
+T_g
+=
+g(L)
+=
+U g(\Lambda)U^*.
+\]
+
+\vspace{0.4em}
+
+\end{frame}
+
+\begin{frame}{Scaled Spectral Filter}
+
+The scaled graph wavelet operator is
+\[
+T_g^t = g(tL).
+\]
+
+With eigendecomposition $L = U\Lambda U^*$,
+\[
+g(tL)
+=
+U g(t\Lambda) U^*.
+\]
+
+For each graph frequency $\lambda_\ell$,
+\[
+g(tL)\chi_\ell
+=
+g(t\lambda_\ell)\chi_\ell.
+\]
+
+\begin{block}{Scale in SGWT}
+The scale parameter $t$ rescales graph frequencies:
+\[
+g(\lambda_\ell)
+\quad\longrightarrow\quad
+g(t\lambda_\ell).
+\]
+It does not rely on vertex-domain translation.
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Graph Wavelets}
+
+The graph wavelet centered at vertex $n$ and scale $t$ is
+\[
+\psi_{t,n}
+=
+T_g^t\delta_n
+=
+g(tL)\delta_n.
+\tag{SGWT Eq.~23}
+\]
+
+The value at vertex $m$ is
+\[
+\psi_{t,n}(m)
+=
+\sum_{\ell=0}^{N-1}
+g(t\lambda_\ell)\chi_\ell^*(n)\chi_\ell(m).
+\tag{SGWT Eq.~24}
+\]
+
+\begin{block}{Graph wavelet}
+A graph wavelet is obtained by applying the scaled spectral operator $g(tL)$
+to an impulse $\delta_n$ at vertex $n$.
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Wavelet Coefficients}
+
+The SGWT coefficient is
+\[
+W_f(t,n)
+=
+\inner{\psi_{t,n}}{f}.
+\tag{SGWT Eq.~25}
+\]
+
+Equivalently,
+\[
+W_f(t,n)
+=
+(T_g^t f)(n)
+=
+\sum_{\ell=0}^{N-1}
+g(t\lambda_\ell)\widehat f(\ell)\chi_\ell(n).
+\tag{SGWT Eq.~26}
+\]
+
+\begin{block}{Operational form}
+The coefficient $W_f(t,n)$ is the value at vertex $n$ after filtering $f$ by $g(tL)$.
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Two Key Properties of SGWT}
+
+After defining the SGWT coefficients, we need to check two key properties.
+
+\begin{block}{1. Locality}
+Are graph wavelets concentrated around their center vertex?
+\end{block}
+
+\begin{block}{2. Stability}
+Do the coefficients give a stable representation of the signal?
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Localization by Graph Distance}
+
+Let $d_G(m,n)$ be the graph distance between vertices $m$ and $n$.
+
+\medskip
+
+A key consequence of the path-counting lemmas is that powers of the graph Laplacian are localized in graph distance:
+\[
+d_G(m,n)>s
+\quad\Rightarrow\quad
+(L^s)_{m,n}=0.
+\]
+
+\begin{itemize}
+  \item One multiplication by $L$ propagates information by at most one hop.
+  \item $L^s$ propagates information by at most $s$ hops.
+  \item Polynomial filters in $L$ are localized in graph distance.
+\end{itemize}
+
+\begin{block}{Key idea}
+Matrix powers encode graph neighborhoods: $L^s$ cannot connect vertices farther than $s$ hops.
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Taylor Structure of the Kernel}
+
+If $g$ has a zero of order $K$ at the origin, then for small $t$,
+\[
+g(t\lambda)
+\approx
+\frac{g^{(K)}(0)}{K!}(t\lambda)^K.
+\]
+
+Therefore, at the operator level,
+\[
+g(tL)
+\approx
+\frac{g^{(K)}(0)}{K!}t^K L^K.
+\]
+
+\begin{block}{Connection to localization}
+Since $L^K\delta_n$ cannot reach vertices farther than $K$ hops,
+the leading term of the graph wavelet is localized around vertex $n$.
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Theorem 5.7: Small-Scale Localization}
+
+Let $g$ satisfy the Taylor assumption above.
+If
+\[
+d_G(m,n)>K,
+\]
+then for sufficiently small $t$,
+\[
+\frac{|\psi_{t,n}(m)|}{\|\psi_{t,n}\|_2}
+\leq
+D_{m,n}t.
+\tag{SGWT Eq.~42}
+\]
+
+\begin{block}{Meaning}
+At small scales, graph wavelets are localized around their center vertex.
+Far-away vertices have only a small relative response.
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Proof Idea: Theorem 5.7}
+
+Use the Taylor expansion of the kernel:
+\[
+g(tL)
+=
+\frac{g^{(K)}(0)}{K!}t^K L^K
++
+O(t^{K+1}).
+\]
+
+Apply it to the impulse $\delta_n$:
+\[
+\psi_{t,n}
+=
+g(tL)\delta_n
+=
+\frac{g^{(K)}(0)}{K!}t^K L^K\delta_n
++
+O(t^{K+1}).
+\]
+
+If $d_G(m,n)>K$, then
+\[
+(L^K)_{m,n}=0.
+\]
+
+Hence the leading term vanishes at vertex $m$:
+\[
+|\psi_{t,n}(m)|=O(t^{K+1}),
+\qquad
+\|\psi_{t,n}\|_2=O(t^K).
+\]
+
+Therefore,
+\[
+\frac{|\psi_{t,n}(m)|}{\|\psi_{t,n}\|_2}
+=
+O(t).
+\]
+
+\begin{center}
+\keyterm{At small scales, the wavelet is concentrated near its center vertex.}
+\end{center}
+
+\end{frame}
+
+\begin{frame}{Lemma 5.1: Continuous SGWT Inverse}
+
+Assume
+\[
+C_g=\int_0^\infty \frac{g(x)^2}{x}\,dx<\infty.
+\tag{SGWT Eq.~27}
+\]
+
+Then the continuous family of graph wavelets reconstructs
+\[
+f^\#=f-\inner{\chi_0}{f}\chi_0.
+\]
+
+The reconstruction formula is
+\[
+\frac{1}{C_g}\sum_{n=1}^{N}\int_0^\infty
+W_f(t,n)\psi_{t,n}(m)\frac{dt}{t}
+=f^\#(m).
+\tag{SGWT Eq.~28}
+\]
+
+\end{frame}
+
+\begin{frame}{Proof Idea: Lemma 5.1}
+
+Expand both $W_f(t,n)$ and $\psi_{t,n}(m)$ in the graph Fourier basis:
+\[
+W_f(t,n)
+=
+\sum_{\ell=0}^{N-1}
+g(t\lambda_\ell)\widehat f(\ell)\chi_\ell(n),
+\]
+\[
+\psi_{t,n}(m)
+=
+\sum_{\ell'=0}^{N-1}
+g(t\lambda_{\ell'})\chi_{\ell'}^*(n)\chi_{\ell'}(m).
+\]
+
+Sum over the center vertex $n$:
+\[
+\sum_{n=1}^{N}\chi_\ell(n)\chi_{\ell'}^*(n)=\delta_{\ell,\ell'}.
+\]
+
+Then integrate over scales:
+\[
+\int_0^\infty g(t\lambda_\ell)^2\frac{dt}{t}=C_g
+\quad(\lambda_\ell>0).
+\]
+
+\begin{center}
+\keyterm{Only the zero-frequency term is missing, because $g(0)=0$.}
+\end{center}
+
+\end{frame}
+
+\begin{frame}{Scaling Functions}
+
+Wavelet filters usually satisfy $g(0)=0$, so they do not capture the zero-frequency component.
+
+\medskip
+
+To cover the low-frequency part, SGWT introduces a low-pass kernel $h$.
+The scaling function centered at vertex $n$ is
+\[
+\phi_n
+=
+h(L)\delta_n.
+\]
+
+The scaling coefficient is
+\[
+S_f(n)
+=
+\inner{\phi_n}{f}.
+\]
+
+\begin{block}{Low-frequency coverage}
+The wavelet kernels $g(t\lambda_\ell)$ capture band-pass components,
+while the scaling kernel $h(\lambda_\ell)$ covers the low-frequency part near $\lambda=0$.
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Spectral Coverage Criterion}
+
+For stable reconstruction, the scaling filter and all wavelet filter should cover the graph spectrum.
+
+For each graph frequency $\lambda_\ell$, define
+\[
+G(\lambda_\ell)
+=
+|h(\lambda_\ell)|^2
++
+\sum_{j=1}^{J}
+|g(t_j\lambda_\ell)|^2.
+\]
+
+A stable SGWT requires
+\[
+0 < A
+\leq
+G(\lambda_\ell)
+\leq
+B < \infty,
+\qquad
+\ell=0,\dots,N-1.
+\]
+
+\begin{block}{Meaning}
+No graph frequency should be missed.  
+The scaling kernel $h$ covers the low-frequency part, especially near $\lambda=0$,
+while the scaled wavelet kernels $g(t_j\lambda_\ell)$ cover the remaining frequencies.
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Stability of SGWT Coefficients}
+
+The spectral coverage condition implies the frame inequality
+\[
+A\|f\|^2
+\leq
+\sum_n |S_f(n)|^2
++
+\sum_{j=1}^{J}\sum_n |W_f(t_j,n)|^2
+\leq
+B\|f\|^2.
+\]
+
+Here, the middle term is the total energy of all SGWT coefficients.
+
+\begin{block}{Interpretation}
+The lower bound means that no signal energy is lost.
+The upper bound means that the coefficients do not over-amplify the signal.
+\end{block}
+
+\end{frame}
+
+%============================================================
+\section[Approximation]{Chebyshev Wavelet Approximation}
+%============================================================
+
+\begin{frame}{Why Approximation Is Needed}
+PROBLEM: Direct spectral filtering is computationally expensive.
+
+Specifically, eigen-decomposition of the wavelet generating function
+$$g(tL)f=Ug(t\Lambda)U^*f$$
+scales poorly at $O(N^3)$. For large graphs, computing $U$ is expensive.
+
+\medskip
+SOLUTION: Instead of finding the exact, filter, approximate using some polynomial functions instead: 
+$$g(tL)f\approx p(L)f$$
+where
+$$p(L)=\sum_{i=0}^M c_i(L)^i$$
+
+\medskip
+QUESTION: Will this shortcut break the function?
+\end{frame}
+
+\begin{frame}{Lemma 6.1: Approximation Error}
+Let approximate $p(x)$ of $g(tx)$ over $[0,\lambda_{\max}]$. Define spectral error as
+$$B:=\sup_{x\in[0,\lambda_{\max}]}|g(tx)-p(x)|.$$
+
+Define the approximate coefficient at node $n$ as
+$$\widetilde{W}_f(t,n):=(p(L)f)_n.$$
+
+Then
+\[
+|W_f(t,n)-\widetilde W_f(t,n)|\leq B\|f\|.
+\tag{SGWT Eq. 53}
+\]
+
+\begin{center}
+\keyterm{The error at any node is bounded by $B$, $||f||$ is a scalar.}
+
+\medskip
+Blackboard presentation for proof.
+\end{center}
+\end{frame}
+
+\begin{frame}{Chebyshev Polynomials}
+One potential candidate for $p(L)$ are the Chebyshev polynomials:
+\[
+T_0(y)=1,
+\qquad
+T_1(y)=y,
+\]
+\[
+T_k(y)=2yT_{k-1}(y)-T_{k-2}(y).
+\]
+
+They also satisfy
+\[
+T_k(y)=\cos(k\arccos y),
+\qquad y\in[-1,1].
+\]
+
+\begin{block}{Reason for use}
+Chebyshev polynomials are numerically stable on $[-1,1]$ and can be evaluated recursively.
+\end{block}
+\end{frame}
+
+\begin{frame}{Shifted Chebyshev Approximation}
+Map $[0,\lambda_{\max}]$ to $[-1,1]$ by
+\[
+a=\frac{\lambda_{\max}}{2},
+\qquad
+y=\frac{x-a}{a}.
+\]
+
+Recall that
+$$T_k(y)=2yT_{k-1}(y)-T_{k-2}(y),$$
+the shifted matrix-vector equivalent is
+$$\overline{T}_k(L)f=\frac{2(L-aI)}{a}\overline{T}_{k-1}(L)f-\overline{T}_{k-2}(L)f.$$
+
+Therefore,
+\[
+g(t_jL)f
+\approx
+\frac{1}{2}c_{j,0}f+
+\sum_{k=1}^{M_j}c_{j,k}\overline T_k(L)f.
+\]
+\end{frame}
+
+\begin{frame}{Fast Recurrence}
+The shifted recurrence is
+\begin{align*}
+    \overline T_k(L)f&=\frac{2(L-aI)}{a}\overline T_{k-1}(L)f-\overline T_{k-2}(L)f\\
+    &=\frac{2}{a}(L-aI)v_{k-1}-v_{k-2}
+\end{align*}
+
+\begin{itemize}
+  \item $M$ matrix-vector multiplication and subtractions.
+  \item For $p(L):=\sum_{k=0}^Kc_k(L)^k$, filtering costs approximately $O(K|\E|)$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Reconstruction with the approximated SGWT}
+SGWT creates a $N\times(J+1)$ dimensional "overcomplete frame":
+\[
+Wf=
+\left(
+T_hf,\,
+T_g^{t_1}f,\,
+\ldots,\,
+T_g^{t_J}f
+\right).
+\]
+
+A pseudoinverse is needed:
+\[
+W^\dagger=(W^*W)^{-1}W^*.
+\]
+
+This requires the adjoint of $W$:
+\[
+W^*\eta
+=
+T_h\eta_0+\sum_{j=1}^{J}T_g^{t_j}\eta_j.
+\]
+
+\begin{itemize}
+    \item $W^*$ applies scaling filter to low-pass coefficients and wavlet filters to band-pass coefficients.
+    \item weighted sum to project multi-sclae wavelets back to the vertices.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Reconstruction with the approximated SGWT (Continued)}
+
+Pseudoinverse reconstruction:
+$$f=(W^*W)^{-1}W^*\eta.$$
+
+Let $b=W^*\eta$,
+find $f$ s.t.
+$$(W^*W)f=b.$$
+
+\medskip
+
+Calculate using "Conjugate Gradients" algorithm:
+
+\begin{itemize}
+    \item Compute $f_{temp}=Wf$ using Chebyshev recurrence.
+    \item Compute $f_{final}=W^*f_{temp}$ using Chebyshev recurrence.
+\end{itemize}
+\end{frame}
+
+%============================================================
+\section[GCN]{Graph Convolutional Networks}
+%============================================================
+
+\begin{frame}{Semi-Supervised Node Classification}
+Inputs:
+\[
+A\in\R^{N\times N},
+\qquad
+X\in\R^{N\times C},
+\qquad
+\Y_L.
+\]
+
+Model output:
+\[
+Z=f(X,A)\in\R^{N\times F}.
+\]
+
+The loss is evaluated only on labeled nodes,
+\[
+\Y_L\subset\{1,\ldots,N\}.
+\]
+
+\begin{block}{GCN model class}
+Standard NN only takes $X$ as input and output $Z=f(X)$. GCN introduces graph structure $A$ directly into forward pass.
+\end{block}
+\end{frame}
+
+\begin{frame}{Laplacian Regularization}
+Traditionally, the loss function is
+\[
+\mathcal{L}=\mathcal{L}_0+\lambda\mathcal{L}_{\mathrm{reg}}.
+\tag{GCN Eq. 1}
+\]
+where
+\[
+\mathcal{L}_{\mathrm{reg}}
+=
+\sum_{i,j}A_{ij}\|f(X_i)-f(X_j)\|^2
+=f(X)^T\Delta f(X).
+\]
+
+\begin{alertblock}{Limitation}
+Connected nodes must have the same label, forcing output to bet smoothed across the graph.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{GCN Spectral Convolution}
+Normalized graph Laplacian is needed:
+\[
+L=I_N-D^{-1/2}AD^{-1/2}=U\Lambda U^T.
+\]
+Eigenvalues of $L$ bounded between $[0,2]$.
+
+GCN defines spectral convolution by
+\[
+g_\theta*x=Ug_\theta U^Tx.
+\tag{GCN Eq. 3}
+\]
+
+\begin{itemize}
+  \item $U^Tx$: graph Fourier transform.
+  \item $g_\theta$: learnable spectral filter.
+  \item $U$: inverse graph Fourier transform.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Chebyshev Approximation in GCN}
+Scale eigenvalues to Chebyshev stable range
+\[
+\widetilde{\Lambda}=\frac{2}{\lambda_{\max}}\Lambda-I_N.
+\]
+
+Chebyshev polynomial approximation:
+\[
+g_{\theta'}(\Lambda)
+\approx
+\sum_{k=0}^{K}\theta_k'T_k(\widetilde{\Lambda}),
+\tag{GCN Eq. 4}
+\]
+
+Thus,
+\[
+g_{\theta'}*x
+\approx
+\sum_{k=0}^{K}\theta_k'T_k(\widetilde L)x,
+\tag{GCN Eq. 5}
+\]
+with
+\[
+\widetilde L=\frac{2}{\lambda_{\max}}L-I_N.
+\]
+\end{frame}
+
+\begin{frame}{First-Order Approximation}
+Set $K=1$ and approximate $\lambda_{\max}\approx 2$:
+\[
+g_{\theta'}*x
+\approx
+\theta_0'x+\theta_1'(L-I_N)x.
+\]
+
+Since
+\[
+L=I_N-D^{-1/2}AD^{-1/2},
+\]
+\[
+g_{\theta'}*x
+\approx
+\theta_0'x-\theta_1'D^{-1/2}AD^{-1/2}x.
+\tag{GCN Eq. 6}
+\]
+
+To prevent overfitting, fix
+\[
+\theta:=\theta_0'=-\theta_1'.
+\]
+
+Then
+\[
+g_\theta*x
+\approx
+\theta\left(I_N+D^{-1/2}AD^{-1/2}\right)x.
+\tag{GCN Eq. 7}
+\]
+
+\begin{alertblock}{Problem}
+The operator $I_N+D^{-1/2}AD^{-1/2}$ has eigenvalues in $[0,2]$, which can cause numerical instability when layers are stacked.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Renormalization Trick}
+Add self-loops:
+\[
+\widetilde A=A+I_N,
+\qquad
+\widetilde D_{ii}=\sum_j \widetilde A_{ij}.
+\]
+
+The renormalized propagation model is
+\[
+Z=\widetilde D^{-1/2}\widetilde A\widetilde D^{-1/2}X\Theta.
+\tag{GCN Eq. 8}
+\]
+
+Define
+\[
+\widehat A=\widetilde D^{-1/2}\widetilde A\widetilde D^{-1/2}.
+\]
+
+\begin{center}
+\keyterm{Operator's eigenvalues are now bounded within $[-1,1]$.}
+\end{center}
+\end{frame}
+
+\begin{frame}{Layer-Wise GCN Propagation (Macro)}
+Stacking the renormalized propagation with trainable weights and nonlinearities gives
+\[
+H^{(l+1)}
+=
+\sigma\left(\widehat A H^{(l)}W^{(l)}\right).
+\tag{GCN Eq. 2}
+\]
+
+\begin{itemize}
+  \item $H^{(0)}=X$.
+  \item $\widehat A H^{(l)}$: normalized neighborhood aggregation.
+  \item $W^{(l)}$: learnable feature transformation.
+  \item $\sigma$: nonlinearity such as ReLU.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Neighborhood Aggregation View (Micro)}
+GCN can be written node-wise as
+\[
+h_i^{(l+1)}
+=
+\sigma\left(
+\sum_{j\in\mathcal{N}_i}
+\frac{1}{c_{ij}}h_j^{(l)}W^{(l)}
+\right).
+\tag{GCN Eq. 12}
+\]
+
+For symmetric normalization,
+\[
+c_{ij}=\sqrt{d_i d_j}.
+\]
+
+\begin{block}{Connection}
+This is the vertex-domain aggregation form of the first-order spectral approximation.
+\end{block}
+\end{frame}
+
+\begin{frame}{Two-Layer GCN}
+For semi-supervised classification, the two-layer model is
+\[
+Z=\softmax\left(
+\widehat A\,
+\sigma\left(\widehat A XW^{(0)}\right)
+W^{(1)}
+\right).
+\tag{GCN Eq. 9}
+\]
+
+\begin{itemize}
+  \item First propagation: feature smoothing and hidden representation.
+  \item Second propagation: class-level output representation.
+  \item Two layers aggregate information from up to two-hop neighborhoods.
+\end{itemize}
+
+The cross-entropy loss over labeled nodes is
+\[
+\mathcal{L}
+=
+-
+\sum_{l\in\mathcal{Y}_L}
+\sum_{f=1}^{F}
+Y_{lf}\ln Z_{lf}.
+\tag{GCN Eq. 10}
+\]
+
+\begin{block}{Semi-supervised setting}
+Unlabeled nodes are not included in the loss, but they participate in message propagation through $\widehat A$.
+\end{block}
+\end{frame}
+
+\begin{frame}{GCN Main Results}
+\begin{table}
+\scriptsize
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lrrrr}
+\toprule
+Method & Citeseer & Cora & Pubmed & NELL \\
+\midrule
+ManiReg & 60.1 & 59.5 & 70.7 & 21.8 \\
+SemiEmb & 59.6 & 59.0 & 71.1 & 26.7 \\
+LP & 45.3 & 68.0 & 63.0 & 26.5 \\
+DeepWalk & 43.2 & 67.2 & 65.3 & 58.1 \\
+ICA & 69.1 & 75.1 & 73.9 & 23.1 \\
+Planetoid* & 64.7 (26s) & 75.7 (13s) & 77.2 (25s) & 61.9 (185s) \\
+GCN & 70.3 (7s) & 81.5 (4s) & 79.0 (38s) & 66.0 (48s) \\
+GCN random splits & $67.9\pm0.5$ & $80.1\pm0.5$ & $78.9\pm0.7$ & $58.4\pm1.7$ \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{center}
+\keyterm{GCN improves accuracy and is faster than previous best methods like Planetoid.}
+\end{center}
+\source{GCN Table 2.}
+\end{frame}
+
+\begin{frame}{GCN Propagation Rule Ablation}
+\begin{table}
+\scriptsize
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lrrr}
+\toprule
+Propagation model & Citeseer & Cora & Pubmed \\
+\midrule
+Chebyshev filter, $K=3$ & 69.8 & 79.5 & 74.4 \\
+Chebyshev filter, $K=2$ & 69.6 & 81.2 & 73.8 \\
+First-order model, Eq. 6 & 68.3 & 80.0 & 77.5 \\
+Single parameter, Eq. 7 & 69.3 & 79.2 & 77.4 \\
+Renormalization trick, Eq. 8 & 70.3 & 81.5 & 79.0 \\
+First-order term only & 68.7 & 80.5 & 77.8 \\
+Multi-layer perceptron & 46.5 & 55.1 & 71.4 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{center}
+\keyterm{Ablation shows renormalisation is the best performing variant.}
+\end{center}
+\source{GCN Table 3.}
+\end{frame}
+
+\begin{frame}{GCN Runtime and Depth Evidence}
+\begin{figure}
+        \centering
+        \includegraphics[width=0.6\textwidth]{wallclock time.png}
+\end{figure}
+
+\begin{block}{Runtime scaling, Figure 2}
+On random graphs, Chebyshev approximation reduces computation to linear time.
+\end{block}
+\end{frame}
+
+\begin{frame}{GCN Runtime and Depth Evidence (Continued)}
+\begin{figure}
+        \centering
+        \includegraphics[width=0.9\textwidth]{model depth.png}
+\end{figure}
+
+\begin{center}
+\keyterm{Peak of curves are highest at 2 to 3 layers. Deeper layers struggle to train.}
+\end{center}
+\end{frame}
+
+\begin{frame}{Limitations of GCN}
+\begin{itemize}
+  \item Full-batch training has memory cost growing linearly with graph size.
+  \item Mini-batch training is nontrivial because a $K$-layer GCN depends on $K$-hop neighborhoods.
+  \item The original model is limited to undirected graphs without native edge features.
+  \item The approximation assumes locality and equal importance of self-connections and neighbor edges.
+\end{itemize}
+
+\begin{block}{Suggested extension}
+\[
+\widetilde A=A+\lambda I_N
+\tag{GCN Eq. 11}
+\]
+can introduce a learnable or tunable trade-off between self-information and neighbor information.
+\end{block}
+\end{frame}
+
+%============================================================
+\section[End]{Summary and Conclusion}
+%============================================================
+
+\begin{frame}{SGWT vs. GCN}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{SGWT}
+\begin{itemize}
+  \item Signal analysis on graphs.
+  \item Multi-scale wavelets.
+  \item Reconstruction and frame theory.
+  \item Core operator:
+  \[
+  g(tL)
+  \]
+\end{itemize}
+\end{column}
+
+\begin{column}{0.48\textwidth}
+\textbf{GCN}
+\begin{itemize}
+  \item Node classification.
+  \item Learnable feature propagation.
+  \item First-order local approximation.
+  \item Core layer:
+  \[
+  H^{(l+1)}=\sigma(\widehat A H^{(l)}W^{(l)})
+  \]
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{References}
+\small
+\begin{itemize}
+  \item D. K. Hammond, P. Vandergheynst, and R. Gribonval.\newline
+  \textit{Wavelets on Graphs via Spectral Graph Theory}.\newline
+  Applied and Computational Harmonic Analysis, 2011.
+
+  \item T. N. Kipf and M. Welling.\newline
+  \textit{Semi-Supervised Classification with Graph Convolutional Networks}.\newline
+  International Conference on Learning Representations, 2017.
+
+  \item M. Defferrard, X. Bresson, and P. Vandergheynst.\newline
+  \textit{Convolutional Neural Networks on Graphs with Fast Localized Spectral Filtering}.\newline
+  NeurIPS, 2016.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Questions}
+\vfill
+\begin{center}
+{\Huge\color{unirot}\textbf{Thank you.}}\\[0.4cm]
+{\Large Questions and Discussion}
+\end{center}
+\vfill
+\end{frame}
+
+\end{document}
+
+
+

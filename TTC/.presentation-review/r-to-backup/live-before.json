@@ -1,0 +1,500 @@
+[
+  {
+    "Index": 1,
+    "Start": 0,
+    "End": 43,
+    "Text": "Test Time Compute Main Presentation Script"
+  },
+  {
+    "Index": 2,
+    "Start": 43,
+    "End": 62,
+    "Text": "Slide 1 Title page"
+  },
+  {
+    "Index": 3,
+    "Start": 62,
+    "End": 163,
+    "Text": "Today I will present a paper about using more computation when a language model answers a question. "
+  },
+  {
+    "Index": 4,
+    "Start": 163,
+    "End": 218,
+    "Text": "Slide 2 Can Language Models Benefit from More Thinking"
+  },
+  {
+    "Index": 5,
+    "Start": 218,
+    "End": 223,
+    "Text": "Pass"
+  },
+  {
+    "Index": 6,
+    "Start": 223,
+    "End": 269,
+    "Text": "Slide 3 How Do We Work through a Math Problem"
+  },
+  {
+    "Index": 7,
+    "Start": 269,
+    "End": 274,
+    "Text": "Pass"
+  },
+  {
+    "Index": 8,
+    "Start": 274,
+    "End": 325,
+    "Text": "Slide 4 Two Directions for Using Extra Computation"
+  },
+  {
+    "Index": 9,
+    "Start": 325,
+    "End": 330,
+    "Text": "Pass"
+  },
+  {
+    "Index": 10,
+    "Start": 330,
+    "End": 380,
+    "Text": "Slide 5 PRM Guided Search from Steps to an Answer"
+  },
+  {
+    "Index": 11,
+    "Start": 380,
+    "End": 385,
+    "Text": "Pass"
+  },
+  {
+    "Index": 12,
+    "Start": 385,
+    "End": 421,
+    "Text": "Slide 6 Who Can Score the Reasoning"
+  },
+  {
+    "Index": 13,
+    "Start": 421,
+    "End": 426,
+    "Text": "Pass"
+  },
+  {
+    "Index": 14,
+    "Start": 426,
+    "End": 468,
+    "Text": "Slide 7 How Do We Select the Final Answer"
+  },
+  {
+    "Index": 15,
+    "Start": 468,
+    "End": 473,
+    "Text": "Pass"
+  },
+  {
+    "Index": 16,
+    "Start": 473,
+    "End": 516,
+    "Text": "Slide 8 Which Candidates Should We Develop"
+  },
+  {
+    "Index": 17,
+    "Start": 516,
+    "End": 618,
+    "Text": "The third question is how to generate and keep the candidates. The three diagrams show three choices."
+  },
+  {
+    "Index": 18,
+    "Start": 618,
+    "End": 695,
+    "Text": "Best-of-N independently generates complete solutions and selects afterward. "
+  },
+  {
+    "Index": 19,
+    "Start": 695,
+    "End": 859,
+    "Text": "Beam search brings the verifier into the generation process. At each depth, it scores the current prefixes, keeps the highest-scoring ones, and expands them again."
+  },
+  {
+    "Index": 20,
+    "Start": 859,
+    "End": 1050,
+    "Text": "Lookahead temporarily continues for up to k more steps, then uses the PRM score at that endpoint to evaluate the current prefix. The temporary continuation helps choose where to search next."
+  },
+  {
+    "Index": 21,
+    "Start": 1050,
+    "End": 1316,
+    "Text": "This also costs extra computation. The comparison charges those additional steps to the budget. If k is zero, lookahead reduces to ordinary beam search. We now have a trained scorer, a search procedure, and a final selection rule. We can compare how well they work."
+  },
+  {
+    "Index": 22,
+    "Start": 1316,
+    "End": 1362,
+    "Text": "Slide 9 Beam Search Helps Most at Low Budgets"
+  },
+  {
+    "Index": 23,
+    "Start": 1362,
+    "End": 1510,
+    "Text": "The experiments use PaLM 2-S star on the MATH benchmark, with 12,000 training questions and 500 test questions. This graph compares search methods."
+  },
+  {
+    "Index": 24,
+    "Start": 1510,
+    "End": 1809,
+    "Text": "The horizontal axis is the generation budget. The vertical axis is accuracy. To compare methods fairly, first look at the same horizontal position. At small budgets, beam search is stronger than weighted best-of-N. As the budget grows, this advantage shrinks, and best-of-N can catch up or pass it."
+  },
+  {
+    "Index": 25,
+    "Start": 1809,
+    "End": 1931,
+    "Text": "Lookahead usually gives less benefit at the same estimated cost. It spends some of its budget on temporary continuations."
+  },
+  {
+    "Index": 26,
+    "Start": 1931,
+    "End": 1986,
+    "Text": "Slide 10 Difficulty Changes Which Search Strategy Wins"
+  },
+  {
+    "Index": 27,
+    "Start": 1986,
+    "End": 2119,
+    "Text": "The authors divide questions into five difficulty groups relative to the base model. Group one is easiest and group five is hardest."
+  },
+  {
+    "Index": 28,
+    "Start": 2119,
+    "End": 2373,
+    "Text": "This graph needs a careful reading. Each group contains four positions, for budgets of 4, 16, 64, and 256. At each position, three colored bars overlap. Every bar starts at zero. We read the top of each color, rather than add the visible colored pieces."
+  },
+  {
+    "Index": 29,
+    "Start": 2373,
+    "End": 2661,
+    "Text": "Blue is beam search, orange is weighted best-of-N, and green is majority voting. For example, in the easiest group at budget four, beam search is highest. As the budget grows, the independent methods catch up. The paper finds signs of over-optimization by beam search in the easy groups."
+  },
+  {
+    "Index": 30,
+    "Start": 2661,
+    "End": 2793,
+    "Text": "In groups three and four, beam search is consistently stronger than best-of-N. In group five, all the methods make little progress."
+  },
+  {
+    "Index": 31,
+    "Start": 2793,
+    "End": 3032,
+    "Text": "So failures are not limited to the hardest questions. Extra search can hurt easy questions, help medium difficulty questions, and still fail on the hardest ones. This gives us a reason to choose settings using both difficulty and budget. "
+  },
+  {
+    "Index": 32,
+    "Start": 3032,
+    "End": 3081,
+    "Text": "Slide 11 Less Compute Can Reach Similar Accuracy"
+  },
+  {
+    "Index": 33,
+    "Start": 3081,
+    "End": 3166,
+    "Text": "Choosing the right search setting helps us reach similar accuracy with less compute."
+  },
+  {
+    "Index": 34,
+    "Start": 3166,
+    "End": 3418,
+    "Text": "Look at the green line, PRM best-of-N weighted, at sixty-four generations. Now look at the blue Oracle line at sixteen generations. The accuracy is almost the same. The orange Predicted line at sixteen also comes close to the green line at sixty-four."
+  },
+  {
+    "Index": 35,
+    "Start": 3418,
+    "End": 3636,
+    "Text": "So choosing the search setting by difficulty can reduce the compute needed for a similar result. This figure does not include the compute used to estimate difficulty. Next, we let the model revise its earlier answers."
+  },
+  {
+    "Index": 36,
+    "Start": 3636,
+    "End": 3687,
+    "Text": "Slide 12 Revising Answers and Selecting the Output"
+  },
+  {
+    "Index": 37,
+    "Start": 3687,
+    "End": 3739,
+    "Text": "Slide 13 Revision Quality and Final Answer Accuracy"
+  },
+  {
+    "Index": 38,
+    "Start": 3739,
+    "End": 4006,
+    "Text": "Let's start with the left figure. For one question, the model runs four separate chains. Each chain has sixty-four complete answers. At round ten, we check the tenth answer in each chain. We average correctness over the four chains, then over all 500 test questions."
+  },
+  {
+    "Index": 39,
+    "Start": 4006,
+    "End": 4191,
+    "Text": "The four chains help us estimate average accuracy. This figure uses no majority vote or ORM selection, either within a chain or across chains. Most improvement happens in early rounds."
+  },
+  {
+    "Index": 40,
+    "Start": 4191,
+    "End": 4438,
+    "Text": "Now look at the right figure. Suppose N is eight. Sequential generation makes eight complete answers in one chain, using earlier answers to write the next one. Parallel generation makes eight independent answers. Both use the same revision model."
+  },
+  {
+    "Index": 41,
+    "Start": 4438,
+    "End": 4726,
+    "Text": "For sequential generation, we choose from the eight answers in that single chain. Majority voting counts how often each final answer appears. Weighted best-of-N sums ORM scores for matching final answers. We apply the same two rules to the eight independent answers in the parallel case."
+  },
+  {
+    "Index": 42,
+    "Start": 4726,
+    "End": 5081,
+    "Text": "Two generation styles and two selection rules give four curves. We check the selected answer for each question and measure accuracy across all 500 questions. Compare sequential and parallel with the same selector: sequential is slightly better. The next slide combines several revision chains and studies how many chains to use and how long to make them."
+  },
+  {
+    "Index": 43,
+    "Start": 5081,
+    "End": 5112,
+    "Text": "Conclusions shown on the slide"
+  },
+  {
+    "Index": 44,
+    "Start": 5112,
+    "End": 5154,
+    "Text": "Most improvement happens in early rounds."
+  },
+  {
+    "Index": 45,
+    "Start": 5154,
+    "End": 5206,
+    "Text": "Sequential is slightly better with either selector."
+  },
+  {
+    "Index": 46,
+    "Start": 5206,
+    "End": 5261,
+    "Text": "Slide 14 The Best Mix Depends on Difficulty and Budget"
+  },
+  {
+    "Index": 47,
+    "Start": 5261,
+    "End": 5417,
+    "Text": "Now we combine independent starts with sequential revisions. The example below uses 128 answers: eight chains, with sixteen complete answers in each chain."
+  },
+  {
+    "Index": 48,
+    "Start": 5417,
+    "End": 5684,
+    "Text": "The ORM first makes a weighted choice inside each chain. It sums scores for matching final answers, then keeps the highest-scoring solution for the winning answer. We now have eight representatives. A second weighted choice across these eight gives one final answer."
+  },
+  {
+    "Index": 49,
+    "Start": 5684,
+    "End": 5924,
+    "Text": "Both figures use this same selection process. In the left figure, each line keeps the total budget fixed. The horizontal axis is chain length divided by chain count. Our example has ratio two. At high budgets, a mix can beat both extremes."
+  },
+  {
+    "Index": 50,
+    "Start": 5924,
+    "End": 6133,
+    "Text": "The right figure fixes the total budget at 128. Each group is a difficulty level, and the colors show different ratios. Easy questions favor longer chains. Harder questions often need more independent starts."
+  },
+  {
+    "Index": 51,
+    "Start": 6133,
+    "End": 6164,
+    "Text": "Conclusions shown on the slide"
+  },
+  {
+    "Index": 52,
+    "Start": 6164,
+    "End": 6211,
+    "Text": "At high budgets, a mix can beat both extremes."
+  },
+  {
+    "Index": 53,
+    "Start": 6211,
+    "End": 6283,
+    "Text": "Easy questions favor longer chains; harder ones often need more starts."
+  },
+  {
+    "Index": 54,
+    "Start": 6283,
+    "End": 6354,
+    "Text": "Slide 15 Adaptive Revisions Use the Generation Budget More Efficiently"
+  },
+  {
+    "Index": 55,
+    "Start": 6354,
+    "End": 6621,
+    "Text": "This graph applies that adaptive choice. Colors distinguish oracle difficulty, predicted difficulty, and pure parallel generation. For solid lines, the ORM selects within each chain and then across chains. For dashed lines, all answers from all chains vote together."
+  },
+  {
+    "Index": 56,
+    "Start": 6621,
+    "End": 6871,
+    "Text": "Compare methods with the same line style. At larger budgets, pure parallel sampling begins to plateau, while the adaptive mixtures continue improving. In the reported comparison, sixty-four candidates can beat parallel best-of-N with 256 candidates."
+  },
+  {
+    "Index": 57,
+    "Start": 6871,
+    "End": 6989,
+    "Text": "Both difficulty definitions help, although estimating difficulty has an extra cost excluded from the plotted budget. "
+  },
+  {
+    "Index": 58,
+    "Start": 6989,
+    "End": 7110,
+    "Text": "We have now seen gains from search and from revisions. Can these gains make a small model competitive with a larger one?"
+  },
+  {
+    "Index": 59,
+    "Start": 7110,
+    "End": 7141,
+    "Text": "Conclusions shown on the slide"
+  },
+  {
+    "Index": 60,
+    "Start": 7141,
+    "End": 7218,
+    "Text": "Adaptive revisions keep improving after parallel sampling begins to plateau."
+  },
+  {
+    "Index": 61,
+    "Start": 7218,
+    "End": 7281,
+    "Text": "64 candidates can beat parallel best-of-N with 256 candidates."
+  },
+  {
+    "Index": 62,
+    "Start": 7281,
+    "End": 7329,
+    "Text": "Slide 16 Comparing Two Uses of the Same Compute"
+  },
+  {
+    "Index": 63,
+    "Start": 7329,
+    "End": 7452,
+    "Text": "We now compare two ways to spend the same total compute. We count pretraining and inference for the same planned workload."
+  },
+  {
+    "Index": 64,
+    "Start": 7452,
+    "End": 7764,
+    "Text": "One option is to train a larger model and generate one greedy answer per question. The other is to keep the smaller model and spend more compute on search or revisions. The larger model has about fourteen times as many parameters. For this cost comparison, both models use the same number of pretraining tokens."
+  },
+  {
+    "Index": 65,
+    "Start": 7764,
+    "End": 7964,
+    "Text": "We need one more quantity, R. It is the total baseline inference tokens divided by pretraining tokens. This ratio helps determine how much extra inference the small model can use at equal total cost."
+  },
+  {
+    "Index": 66,
+    "Start": 7964,
+    "End": 8215,
+    "Text": "The paper considers three R values. R of twenty-two gives roughly sixteen times the small model's baseline inference budget. R of zero point seven nine gives about sixty-four times. R of zero point one six gives about two hundred and fifty-six times."
+  },
+  {
+    "Index": 67,
+    "Start": 8215,
+    "End": 8406,
+    "Text": "These three budgets give the three equal-cost positions in the next figure. The larger model still gives a greedy answer. We compare its accuracy with the small-model curve at each position."
+  },
+  {
+    "Index": 68,
+    "Start": 8406,
+    "End": 8472,
+    "Text": "Slide 17 Extra Inference Can Beat a Larger Model in Some Settings"
+  },
+  {
+    "Index": 69,
+    "Start": 8472,
+    "End": 8629,
+    "Text": "The curves show the small model with adaptive extra inference. The first figure uses revisions and the second uses PRM search. Colors represent difficulty. "
+  },
+  {
+    "Index": 70,
+    "Start": 8629,
+    "End": 8965,
+    "Text": "The horizontal axis is proportional to inference compute. Each vertical line marks one of the equal-total-cost budgets from the previous slide. We compare the same color at that line. If the curve is above the star, extra inference on the small model is more accurate. If the star is above the curve, the larger model is more accurate."
+  },
+  {
+    "Index": 71,
+    "Start": 8965,
+    "End": 9052,
+    "Text": "The stars show greedy accuracy from a model with about fourteen times more parameters."
+  },
+  {
+    "Index": 72,
+    "Start": 9052,
+    "End": 9282,
+    "Text": "The same large-model star appears at several horizontal positions with the same height. Its accuracy has stayed the same. The horizontal position changes because expected use changes the small model's affordable inference budget."
+  },
+  {
+    "Index": 73,
+    "Start": 9282,
+    "End": 9497,
+    "Text": "Easy and medium questions often favor extra inference, especially with lower expected use. Very hard questions often favor the larger model. Higher expected use also leaves less extra inference for the small model."
+  },
+  {
+    "Index": 74,
+    "Start": 9497,
+    "End": 9656,
+    "Text": "These are conditional findings. The comparison uses oracle difficulty groups and fixed pretraining token counts. These findings lead to the final conclusions."
+  },
+  {
+    "Index": 75,
+    "Start": 9656,
+    "End": 9677,
+    "Text": "Slide 18 Conclusions"
+  },
+  {
+    "Index": 76,
+    "Start": 9677,
+    "End": 9692,
+    "Text": "21:30 to 23:30"
+  },
+  {
+    "Index": 77,
+    "Start": 9692,
+    "End": 9858,
+    "Text": "The experiments show that a model can improve its answers with more compute at inference time. The best use of that compute changes with the question and the budget."
+  },
+  {
+    "Index": 78,
+    "Start": 9858,
+    "End": 10006,
+    "Text": "For PRM search, beam search works better on harder questions and at low budgets. On easier questions or at high budgets, best-of-N is often better."
+  },
+  {
+    "Index": 79,
+    "Start": 10006,
+    "End": 10157,
+    "Text": "For revisions, easy questions favor longer chains. Harder questions often need a mix: revise earlier answers, but also try several independent starts."
+  },
+  {
+    "Index": 80,
+    "Start": 10157,
+    "End": 10476,
+    "Text": "Choosing the setting by difficulty and budget gives concrete savings. Adaptive search at sixteen generations nearly matches best-of-N at sixty-four. Adaptive revisions with sixty-four generations can beat parallel best-of-N with two hundred and fifty-six. These budgets exclude the compute used to estimate difficulty."
+  },
+  {
+    "Index": 81,
+    "Start": 10476,
+    "End": 10824,
+    "Text": "Finally, at equal total compute for pretraining and inference, the smaller model with extra inference can beat a model with about fourteen times more parameters. This works on questions within its capabilities and often with a low inference workload. For very hard questions or a high inference workload, extra pretraining is often more effective."
+  },
+  {
+    "Index": 82,
+    "Start": 10824,
+    "End": 10843,
+    "Text": "Slide 19 Questions"
+  },
+  {
+    "Index": 83,
+    "Start": 10843,
+    "End": 10898,
+    "Text": "Thank you for listening. I am happy to take questions."
+  }
+]

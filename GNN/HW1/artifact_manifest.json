@@ -1,0 +1,38 @@
+{
+  "generative-baselines.ipynb": {
+    "bytes": 1293968,
+    "sha256": "854965b3fcf1eed983886b235cbc60c56bd52013565529d29653f895406c5276"
+  },
+  "generative-baselines.pdf": {
+    "bytes": 1112628,
+    "sha256": "2709ed695cbc9aefad77b53af85539203fb715c977f0850668c7c2adb8c7c0fa"
+  },
+  "density_forest.py": {
+    "bytes": 9266,
+    "sha256": "95969bed083363c938cf95ffb32abb468708a02a1f16807bc1e9ea178ec6c355"
+  },
+  "requirements.txt": {
+    "bytes": 158,
+    "sha256": "d5c8bc2dce08e6bc9291483192328cb30dbbd8403dd0ee0722bb9b548e232b56"
+  },
+  "README.txt": {
+    "bytes": 1614,
+    "sha256": "aa44e0050e666d644bb452bcf3c209d2844f17d28317ad42b00e966057167e14"
+  },
+  "moon_results.csv": {
+    "bytes": 28488,
+    "sha256": "05767edab0e606fe43957c76442ca34386dcdafd13a345d9ec1fce600ec42334"
+  },
+  "digit_results.csv": {
+    "bytes": 15244,
+    "sha256": "30aabf88a27dc3026876903a6439eac4609db7173d72e87b30a343a960bf43f8"
+  },
+  "digit_test_scores.csv": {
+    "bytes": 610,
+    "sha256": "50373829fe568d2ca7c63885705558b5093f55a381154a01147adf8a114d65a7"
+  },
+  "ex01.zip": {
+    "bytes": 1825055,
+    "sha256": "7724d843c5ca9dfe5a853113f7f7c7e811d265ef33717a8f2c04965e6cbbf7cc"
+  }
+}
